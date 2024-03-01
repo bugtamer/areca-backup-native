@@ -15,6 +15,7 @@ Cargo.lock
 
 # build.bat outputs
 releases/
+*.res
 
 # IDEs
 .vscode/
