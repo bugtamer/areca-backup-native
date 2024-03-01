@@ -37,4 +37,5 @@ When these binaries run, they will try to find the Areca installation folder in 
 ## Documentation
 
 - [Setting a Rust Executable's Icon in Windows](https://anthropicstudios.com/2021/01/05/setting-a-rust-windows-exe-icon/)
+  (If the URL is broken, try this [backup](/launchers/icon-for-exe.md))
 - [How to install Rust Programming Language](https://www.rust-lang.org/tools/install)
