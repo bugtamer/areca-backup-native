@@ -12,6 +12,10 @@ The built binaries are based on the logic of `areca.sh`, `areca_cl.sh` and `arec
 
    `PS areca-backup-native\launchers>` `.\build.bat`
 
+   this generates binaries with Areca icon, this doesn't:
+
+   `PS areca-backup-native\launchers>` `cargo build --bins`
+
 2. Move these binaries from the _Output folder of `build.bat`_ to the _Areca destination_ folder.
 
 | Binary          | Output folder of `build.bat`                | Areca destination |
