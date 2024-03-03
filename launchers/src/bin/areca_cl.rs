@@ -6,10 +6,7 @@ use launchers::{
 
 
 
-/**
- * areca_cl.exe
- * areca_cl.sh
- */
+/// `areca_cl` opens the Areca's CLI (Command Line Interface).
 fn main() {
     let tui = "com.application.areca.launcher.tui.Launcher";
     let shell_arguments = get_shell_arguments();

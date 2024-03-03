@@ -6,10 +6,7 @@ use launchers::{
 
 
 
-/**
- * areca.exe
- * areca.sh
- */
+/// `areca` opens the Areca's GUI (Graphical User Interface).
 fn main() {
     let gui = "com.application.areca.launcher.gui.Launcher";
     let shell_arguments = get_shell_arguments();
