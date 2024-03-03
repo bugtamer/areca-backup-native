@@ -25,7 +25,7 @@ pub fn run_command_line<'a>(command: &str, arguments: [String; 20]) -> std::io::
 
 
 
-pub fn get_areca_execution_arguments<'a>(init_class: &str, shell_arguments: [String; 12], env: ArecaEnvironment) -> [String; 20] {
+pub fn get_arguments_for_areca_execution<'a>(init_class: &str, shell_arguments: [String; 12], env: ArecaEnvironment) -> [String; 20] {
     let program_dir = if env.areca_home.len() > 0 {
         env.areca_home
     } else {
@@ -127,7 +127,7 @@ pub fn get_shell_arguments<'a>() -> [String; 12] {
 
 
 
-pub fn get_areca_environment() -> ArecaEnvironment {
+pub fn get_environmental_data_for_areca() -> ArecaEnvironment {
     let is_windows = MAIN_SEPARATOR == '\\';
 
     let current_working_dir: String = match env::current_dir() {

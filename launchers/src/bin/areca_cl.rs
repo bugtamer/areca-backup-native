@@ -1,6 +1,6 @@
 use launchers::{
-    get_areca_environment,
-    get_areca_execution_arguments,
+    get_environmental_data_for_areca,
+    get_arguments_for_areca_execution,
     get_shell_arguments, run_command_line
 };
 
@@ -13,8 +13,8 @@ use launchers::{
 fn main() {
     let tui = "com.application.areca.launcher.tui.Launcher";
     let shell_arguments = get_shell_arguments();
-    let env = get_areca_environment();
-    let arguments = get_areca_execution_arguments(tui, shell_arguments, env);
+    let env = get_environmental_data_for_areca();
+    let arguments = get_arguments_for_areca_execution(tui, shell_arguments, env);
     let command = "java";
     let _ = run_command_line(command, arguments);
 }
