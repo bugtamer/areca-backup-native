@@ -1,5 +1,7 @@
 use std::env;
 use std::ffi::{OsStr, OsString};
+use std::fs::File;
+use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf, MAIN_SEPARATOR};
 use std::process::Command;
 use walkdir::WalkDir;
@@ -7,6 +9,8 @@ use walkdir::WalkDir;
 
 pub const GUI_INITIAL_CLASS: &str = "com.application.areca.launcher.gui.Launcher";
 pub const TUI_INITIAL_CLASS: &str = "com.application.areca.launcher.tui.Launcher";
+
+pub const DEFAULT_MAXIMUM_JAVA_HEAP_MEMORY: &str = "-Xmx1024m";
 
 
 pub fn run_areca<'a>(init_class: &str, shell_arguments: [String; 13]) -> std::io::Result<()> {
@@ -92,7 +96,7 @@ fn build_arguments_for_areca_execution<'a>(init_class: &str, shell_arguments: [S
     let user_dir = String::from("-Duser.dir=") + &env.program_dir;
 
     let areca_execution_arguments: Vec<String> = Vec::<String>::from([
-        "-Xmx1024m".to_string(),
+        java_heap_memory(init_class, "-Xmx"),
         "-Xms64m".to_string(),
         "-cp".to_string(),
         classpath,
@@ -131,7 +135,7 @@ struct ArecaEnvironment {
 
 fn get_environmental_data_for_areca() -> ArecaEnvironment {
     let dir_separator = get_system_directory_separator();
-    let current_working_dir = get_current_working_directory();
+    let launcher_dir = get_launcher_dir();
     let areca_home = get_environment_variable("ARECA_HOME");
 
     ArecaEnvironment {
@@ -141,7 +145,7 @@ fn get_environmental_data_for_areca() -> ArecaEnvironment {
         program_dir: if is_areca_present(&areca_home, &dir_separator) {
             String::clone(&areca_home)
         } else {
-            String::clone(&current_working_dir)
+            String::clone(&launcher_dir)
         },
         dir_separator: dir_separator,
     }
@@ -181,11 +185,17 @@ fn get_system_path_separator() -> String {
 
 
 
-fn get_current_working_directory() -> String {
-    return match env::current_dir() {
-        Ok(path) => path.display().to_string(),
-        Err(_e) => String::new()
-    };
+fn get_launcher_dir() -> String {
+    match env::current_exe() {
+        Ok(exe_path) => {
+            let exe_dir: PathBuf = exe_path
+                .parent()
+                .map(|p| p.to_path_buf())
+                .unwrap_or_else(|| PathBuf::from("."));
+            String::from(exe_dir.to_str().unwrap())
+        },
+        Err(why) => panic!("Unknown launcher directory. {}", why),
+    }
 }
 
 
@@ -220,13 +230,65 @@ fn parent_dir(path: &OsStr) -> OsString {
 
 
 
+/**
+ * Help to keep compatibility with 'areca.exe' and 'areca_cl.exe' version 7.5
+ * -Xms<size> set initial Java heap size
+ * -Xmx<size> set maximum Java heap size
+ */
+fn java_heap_memory(init_class: &str, memory: &str) -> String {
+    let bin_conf_file_name = if init_class.eq(GUI_INITIAL_CLASS) {
+        String::from("areca.l4j.ini")
+    } else {
+        String::from("areca_cl.l4j.ini")
+    };
+
+    let env = get_environmental_data_for_areca();
+    let script_dir = get_launcher_dir();
+    let absolute_path = [script_dir, bin_conf_file_name].join(env.dir_separator.as_str());
+
+    let path = Path::new(absolute_path.as_str());
+    let display = path.display();
+
+    match File::open(&path) {
+        Ok(file) => {
+            let reader = io::BufReader::new(file);
+            for line in reader.lines() {
+                match line {
+                    Err(_) => continue,
+                    Ok(line) => {
+                        if line.starts_with(memory) {
+                            return String::from(line);
+                        }
+                    },
+                };
+            }
+        },
+        Err(_) => {
+            let mut missing_file = match File::create(&path) {
+                Ok(file) => file,
+                Err(why) => panic!("Could not create {}: {}", display, why),
+            };
+            let comment = "# Launch4j runtime config";
+            let new_line = "\n";
+            let default_conf_file = [comment, DEFAULT_MAXIMUM_JAVA_HEAP_MEMORY].join(new_line);
+            match missing_file.write_all(default_conf_file.as_bytes()) {
+                Ok(_) => println!("Create missing {}", display),
+                Err(why) => print!("Could not write to {}: {}", display, why),
+            }
+        },
+    };
+    return String::from(DEFAULT_MAXIMUM_JAVA_HEAP_MEMORY);
+}
+
+
+
 fn find_java_installation_on_windows() -> OsString {
     let default = OsString::from("java.exe");
 
     // Direct search in arbitrary local user directories.
     let bin_java = "\\bin\\java.exe";
-    let embedded_jdk_in_cwd = OsString::from(get_current_working_directory() + "\\jdk" + bin_java);
-    let embedded_jre_in_cwd = OsString::from(get_current_working_directory() + "\\jre" + bin_java);
+    let embedded_jdk_in_cwd = OsString::from(get_launcher_dir() + "\\jdk" + bin_java);
+    let embedded_jre_in_cwd = OsString::from(get_launcher_dir() + "\\jre" + bin_java);
     let embedded_jdk_in_areca_home = OsString::from(get_environment_variable("ARECA_HOME") + "\\jdk" + bin_java);
     let embedded_jre_in_areca_home = OsString::from(get_environment_variable("ARECA_HOME") + "\\jre" + bin_java);
     let java_home = OsString::from(get_environment_variable("JAVA_HOME"));
